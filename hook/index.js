@@ -14,4 +14,4 @@ app.post('/webhook', lineWebhook);
 // Define additional routes as needed
 
 // Create and deploy the Express app
-exports.api3 = functions.region('asia-southeast1').https.onRequest(app);
+exports.api = functions.region('asia-southeast1').https.onRequest(app);

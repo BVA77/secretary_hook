@@ -1,9 +1,8 @@
 {
   "functions": [
     {
-      "source": "functions",
-      "region": "asia-southeast1",
-      "codebase": "default",
+      "source": "hook",
+      "codebase": "hook",
       "ignore": [
         "node_modules",
         ".git",
