@@ -1,6 +1,7 @@
 const functions = require('firebase-functions');
 const { Client } = require('@line/bot-sdk');
 const admin = require('firebase-admin');
+const { currentDate } = require('./util/date')
 require('dotenv').config();
 
 const lineConfig = {
@@ -40,7 +41,11 @@ async function handleEvent(event) {
     const text = event.message.text;
 
     // Store the message in Firebase
-    await messagesRef.child(userId).push({ text, timestamp: admin.database.ServerValue.TIMESTAMP });
+    await messagesRef.child(userId).push({
+      text,
+      createDate: currentDate(),
+      timestamp: admin.database.ServerValue.TIMESTAMP
+    });
 
     // Respond to the user
     await lineClient.replyMessage(event.replyToken, {
