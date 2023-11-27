@@ -34,13 +34,6 @@ exports.lineWebhook = functions.https.onRequest(async (req, res) => {
   }
 });
 
-const missMatch = async (event) => {
-  return await lineClient.replyMessage(event.replyToken, {
-    type: 'text',
-    text: `You order is miss match, please try again`,
-  });
-}
-
 const dailyPaid = async (userId, context, amount, replyToken) => {
   const dailyPaidTable = db.ref('dailyPaid');
   await dailyPaidTable.child(userId).push({
@@ -62,36 +55,27 @@ async function handleEvent(event) {
     const userId = event.source.userId;
     const text = event.message.text;
 
-    const splitContext = text.split(',')
+    const splitContext = text.split(' ')
 
-    const type = splitContext[0]
-    const context = splitContext[1]
-    const amount = splitContext[2]
-    
-    switch (type) {
-      case 'ค่าใช้จ่าย':
-        if (splitContext.length !== 3) {
-          return missMatch(event)
-        }
-        dailyPaid(userId, context, amount, event.replyToken)
-        break;
-    
-      default:
-        // Store the message in Firebase
-        await messagesRef.child(userId).push({
-          text,
-          createDate: currentDate(),
-          timestamp: admin.database.ServerValue.TIMESTAMP
-        });
+    const context = splitContext[0]
+    const amount = splitContext[1]
 
-        // Respond to the user
-        await lineClient.replyMessage(event.replyToken, {
-          type: 'text',
-          text: `our plans:
-          1. daily paid example: ค่าใช้จ่าย, ซื้อของเข้าบ้าน, -200 or ค่าใช้จ่าย, ได้รับเงิน, +200`,
-        });
+    if (context.startsWith('ค่า') && splitContext.length === 2) {
+      dailyPaid(userId, context, amount, event.replyToken)
+    } else {
+      // Store the message in Firebase
+      await messagesRef.child(userId).push({
+        text,
+        createDate: currentDate(),
+        timestamp: admin.database.ServerValue.TIMESTAMP
+      });
 
-        break;
+      // Respond to the user
+      await lineClient.replyMessage(event.replyToken, {
+        type: 'text',
+        text: `our plans:
+        1. daily paid example: ค่าซื้อของเข้าบ้าน, -200 or ค่าซื้อของเข้าบ้านจากพี่, +200`,
+      });
     }
   }
 }
