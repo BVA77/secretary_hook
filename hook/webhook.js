@@ -2,6 +2,7 @@ const functions = require('firebase-functions');
 const { Client } = require('@line/bot-sdk');
 const admin = require('firebase-admin');
 const { currentDate } = require('./util/date')
+const axios = require('axios');
 require('dotenv').config();
 
 const lineConfig = {
@@ -12,6 +13,8 @@ const lineConfig = {
 const lineClient = new Client(lineConfig);
 
 admin.initializeApp();
+
+// const bucket = admin.storage().bucket();
 
 // Firebase Realtime Database
 const db = admin.database();
@@ -49,6 +52,17 @@ const dailyPaid = async (userId, context, amount, replyToken) => {
   });
 }
 
+// Get image from Line store
+// const getImageById = async (messageId) => {
+// 	console.log('response messageId ====>>>', messageId)
+
+// 	const response = await axios.get(
+// 		`https://api-data.line.me/v2/bot/message/${messageId}/content`,
+// 		{ headers: { Authorization: `Bearer ${process.env.TEST_LINE_CHANNEL_ACCESS_TOKEN}` } }
+// 	)
+// 	return response;
+// }
+
 // Function to handle Line events
 async function handleEvent(event) {
   if (event.type === 'message' && event.message.type === 'text') {
@@ -74,8 +88,24 @@ async function handleEvent(event) {
       await lineClient.replyMessage(event.replyToken, {
         type: 'text',
         text: `our plans:
-        1. daily paid example: ค่าซื้อของเข้าบ้าน, -200 or ค่าซื้อของเข้าบ้านจากพี่, +200`,
+        1. daily paid example: ค่าซื้อของเข้าบ้าน 200 or ค่าซื้อของเข้าบ้านจากพี่ +200`,
       });
     }
+  } else {
+    await lineClient.replyMessage(event.replyToken, {
+      type: 'text',
+      text: `รับเฉพาะ text อ่ะสิ`,
+    });
   }
+}
+
+exports.testGetData = async () => {
+  const dailyPaidTable = db.ref('dailyPaid');
+  const response = await dailyPaidTable.once('value', (snapshot) => {
+    const data = snapshot.val();
+    // Access the data in the "data" variable
+    console.log(data);
+    return data
+  });
+  return response.val()
 }
