@@ -85,10 +85,11 @@ async function handleEvent(event) {
       });
 
       // Respond to the user
+      const web_url = 'https://secretary-b77.firebaseapp.com/'
       await lineClient.replyMessage(event.replyToken, {
         type: 'text',
         text: `our plans:
-        1. daily paid example: ค่าซื้อของเข้าบ้าน 200 or ค่าซื้อของเข้าบ้านจากพี่ +200`,
+        1. daily paid example: ค่าซื้อของเข้าบ้าน 200 or ค่าซื้อของเข้าบ้านจากพี่ +200 (${web_url})`,
       });
     }
   } else {
