@@ -11,10 +11,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - run: echo '${{ secrets.GITHUB_TOKEN }}' && echo 'ac ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SECRETARY_B77 }}'&& npm install && npm run build
-      - uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_SECRETARY_B77 }}'
-          channelId: live
-          projectId: secretary-b77
+      # - run: echo '${{ secrets.GITHUB_TOKEN }}' && echo 'ac ${{ secrets.FIREBASE_SERVICE_ACCOUNT_SECRETARY_B77 }}' && npm install && npm run build
+      # - uses: FirebaseExtended/action-hosting-deploy@v0
+      #   with:
+      #     repoToken: '${{ secrets.GITHUB_TOKEN }}'
+      #     firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_SECRETARY_B77 }}'
+      #     channelId: live
+      #     projectId: secretary-b77
+
+      - name: Set environment variable
+        run: echo "SECRET_KEY=${{ secrets.FIREBASE_SERVICE_ACCOUNT_SECRETARY_B77 }}" >> $GITHUB_ENV
+
+      - name: Use secret in a script
+        run: |
+          if [ -z "$SECRET_KEY" ]; then
+            echo "Secret is empty or not set"
+            exit 1
+          else
+            echo "Secret is set"
+          fi
