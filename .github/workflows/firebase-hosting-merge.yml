@@ -21,7 +21,7 @@ jobs:
 
       - name: Use secret in a script
         run: |
-          if [ -z "$FIREBASE_SERVICE_ACCOUNT_SECRETARY_B77" ]; then
+          if [ -z "$GITHUB_TOKEN" ]; then
             echo "Secret is empty or not set"
             exit 1
           else
