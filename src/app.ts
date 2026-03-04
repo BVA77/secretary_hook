@@ -1,8 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
-import { WebhookEvent, Message, validateSignature } from '@line/bot-sdk';
+import { WebhookEvent, validateSignature } from '@line/bot-sdk';
 import { handleEvent } from './services/lineService';
 import 'dotenv/config'; // Load environment variables from .env
-import { ParsedExpense } from './types'; // Import the type used in handleEvent
 
 // --- Configuration ---
 const PORT = parseInt(process.env.PORT as string) || 3000;
@@ -66,6 +65,4 @@ app.get('/', (req: Request, res: Response) => {
     res.status(200).send('LINE Expense Bot is running.');
 });
 
-
-// --- Startup ---
-export { app };
+export default app;

@@ -1,4 +1,4 @@
-import { WebhookEvent, Message, Client, ImageEventMessage } from '@line/bot-sdk';
+import { WebhookEvent, Client, ImageEventMessage } from '@line/bot-sdk';
 import { saveExpense } from './supabaseService';
 import { extractExpenseDataFromImage, extractExpenseDataFromText } from './geminiService';
 import axios from 'axios';

@@ -1,5 +1,4 @@
 import { GoogleGenerativeAI, Part } from "@google/generative-ai";
-import axios from 'axios';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
@@ -11,31 +10,6 @@ const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
 // --- Configuration ---
 const MODEL_NAME = "gemini-2.5-flash";
-
-// Define the structure of the expected JSON output explicitly for Gemini
-// Using a defined structure to leverage responseSchema for guaranteed JSON output
-const EXPENSE_JSON_SCHEMA = {
-  type: "object",
-  properties: {
-    type: {
-      type: "string",
-      description: "Must be either 'income' or 'expense'. Case-insensitive detection from text/image."
-    },
-    amount: {
-      type: "number",
-      description: "The numeric value of the transaction amount, as a float or integer. Must be positive."
-    },
-    description: {
-      type: "string",
-      description: "A brief, concise summary of the item/service/source (max 50 chars)."
-    },
-    error: {
-        type: "string",
-        description: "Any error message if parsing failed, otherwise empty string."
-    }
-  },
-  required: ["type", "amount", "description"],
-};
 
 // --- Core Functions ---
 
@@ -73,12 +47,11 @@ export async function extractExpenseDataFromImage(imageBuffer: Buffer, mimeType:
     prompt,
     fileToGenerativePart(imageBuffer, mimeType),
   ]);
-
   const response = result.response;
   const text = response.text();
-
+  const cleanedData = text.replace(/```json|```/g, "").trim();
   try {
-    const jsonResult = JSON.parse(text);
+    const jsonResult = JSON.parse(cleanedData);
 
     if (jsonResult.error) {
         throw new Error(jsonResult.error);
@@ -124,9 +97,10 @@ export async function extractExpenseDataFromText(text: string): Promise<{ type: 
 
     const response = result.response;
     const textOutput = response.text();
+    const cleanedData = textOutput.replace(/```json|```/g, "").trim();
 
     try {
-        const jsonResult = JSON.parse(textOutput);
+        const jsonResult = JSON.parse(cleanedData);
 
         if (jsonResult.error) {
             throw new Error(jsonResult.error);

@@ -21,7 +21,7 @@ export async function saveExpense(expenseData: Omit<Expense, 'id' | 'created_at'
     .from('expenses')
     .insert({
       ...expenseData,
-      created_at: new Date().toISOString(),
+      created_at: new Date().toISOString()
     })
     .select()
     .single();
@@ -34,11 +34,3 @@ export async function saveExpense(expenseData: Omit<Expense, 'id' | 'created_at'
   return data as Expense;
 }
 
-// Note: You would also need to create the 'expenses' table in Supabase with the necessary columns:
-// id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-// created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-// line_user_id TEXT NOT NULL,
-// type TEXT NOT NULL, -- CHECK (type IN ('income', 'expense'))
-// amount NUMERIC NOT NULL,
-// description TEXT,
-// image_url TEXT

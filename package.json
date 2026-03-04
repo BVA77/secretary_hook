@@ -4,7 +4,7 @@
   "description": "LINE Messaging API and Supabase integration with Gemini 2.5 Flash for expense tracking.",
   "main": "dist/app.js",
   "scripts": {
-    "start": "node dist/app.js",
+    "start": "ts-node src/app.ts",
     "dev": "nodemon --watch src --ext ts --exec ts-node src/app.ts",
     "build": "tsc"
   },
