@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI, Part } from "@google/generative-ai";
+import { parseAndFormatDate, getTodayDate } from '../utils';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
@@ -34,13 +35,18 @@ function fileToGenerativePart(imageBuffer: Buffer, mimeType: string): Part {
  * @param mimeType The image's MIME type (e.g., 'image/jpeg').
  * @returns A promise that resolves to the parsed expense data.
  */
-export async function extractExpenseDataFromImage(imageBuffer: Buffer, mimeType: string): Promise<{ type: 'income' | 'expense', amount: number, description: string }> {
+export async function extractExpenseDataFromImage(imageBuffer: Buffer, mimeType: string): Promise<{ type: 'income' | 'expense', amount: number, description: string, transactionDate: string | null }> {
   const model = genAI.getGenerativeModel({ model: MODEL_NAME });
+
+  const current_date = new Date().toLocaleDateString('en-US', { 
+        weekday: 'long', year: 'numeric', day: '2-digit', month: '2-digit', timeZone: 'Asia/Bangkok' 
+    });
 
   const prompt = `Analyze the attached receipt/image. Extract the transaction details ONLY in the specified JSON format.
   If the transaction is clearly income (e.g., salary, deposit), set 'type' to 'income'. Otherwise, set 'type' to 'expense'.
   The 'amount' must be a positive number representing the currency value found.
   The 'description' should be a short summary of the item/service.
+  The 'date' should be the transaction date found on the receipt. If no date is found, use ${current_date}.
   If you cannot determine the amount or type reliably, use 0 for amount and describe the issue in 'description', but strive for accuracy.`;
 
   const result = await model.generateContent([
@@ -62,10 +68,22 @@ export async function extractExpenseDataFromImage(imageBuffer: Buffer, mimeType:
         throw new Error("Gemini returned JSON missing required fields.");
     }
 
+    // Process date
+    let transactionDate: string | null = null;
+    if (jsonResult.date && typeof jsonResult.date === 'string') {
+        transactionDate = parseAndFormatDate(jsonResult.date);
+    }
+    
+    // If no valid date found, use today's date
+    if (!transactionDate) {
+        transactionDate = getTodayDate();
+    }
+
     return {
         type: jsonResult.type.toLowerCase().includes('income') ? 'income' : 'expense',
         amount: parseFloat(jsonResult.amount),
-        description: jsonResult.description.substring(0, 50) // Truncate for lean storage
+        description: jsonResult.description.substring(0, 50), // Truncate for lean storage
+        transactionDate
     };
 
   } catch (e) {
@@ -79,15 +97,25 @@ export async function extractExpenseDataFromImage(imageBuffer: Buffer, mimeType:
  * @param text The text message received from LINE.
  * @returns A promise that resolves to the parsed expense data.
  */
-export async function extractExpenseDataFromText(text: string): Promise<{ type: 'income' | 'expense', amount: number, description: string }> {
+export async function extractExpenseDataFromText(text: string): Promise<{ type: 'income' | 'expense', amount: number, description: string, transactionDate: string | null }> {
     const model = genAI.getGenerativeModel({ model: MODEL_NAME });
 
+    const current_date = new Date().toLocaleDateString('en-US', { 
+        weekday: 'long', year: 'numeric', day: '2-digit', month: '2-digit', timeZone: 'Asia/Bangkok' 
+    });
+
     const prompt = `Analyze the following text message to determine if it is an income or an expense.
+    Today's date is: ${current_date} (e.g., Wednesday, 04/03/2026)
+
     Extract the transaction details ONLY in the specified JSON format.
+    - "amount": number
+    - "date": "dd/mm/yyyy" (Calculate the actual date based on "Today's date" if relative terms like 'yesterday' or 'last Friday' are used)
+    - "description": string (Translate to English)
+    - "type": "income" | "expense" | "other"
+
     Examples:
-    - "จ่ายค่ากาแฟ 150 บาท" -> {"type": "expense", "amount": 150, "description": "Coffee"}
-    - "เงินเดือนเข้า 25000" -> {"type": "income", "amount": 25000, "description": "Salary"}
-    - "วันนี้อากาศดี" -> {"type": "expense", "amount": 0, "description": "Not a financial transaction"}
+    - "เมื่อวานจ่ายค่าเน็ต 600" -> {"type": "expense", "amount": 600, "description": "Internet bill", "date": "03/03/2026"}
+    - "ซื้อไก่ 20 บาท เมื่อวันศุกร์ที่ผ่านมา" -> {"type": "expense", "amount": 20, "description": "Chicken", "date": "27/02/2026"}
 
     Text to analyze: "${text}"`;
 
@@ -114,10 +142,35 @@ export async function extractExpenseDataFromText(text: string): Promise<{ type: 
              throw new Error(`Amount '${jsonResult.amount}' is not a valid number.`);
         }
 
+        // Process date
+        let transactionDate: string | null = null;
+        if (jsonResult.date && typeof jsonResult.date === 'string') {
+            // Handle special cases like "today", "yesterday", etc.
+            const dateInput = jsonResult.date.toLowerCase().trim();
+            if (dateInput === 'today' || dateInput === 'วันนี้') {
+                transactionDate = getTodayDate();
+            } else if (dateInput === 'yesterday' || dateInput === 'เมื่อวาน') {
+                const yesterday = new Date();
+                yesterday.setDate(yesterday.getDate() - 1);
+                const day = yesterday.getDate().toString().padStart(2, '0');
+                const month = (yesterday.getMonth() + 1).toString().padStart(2, '0');
+                const year = yesterday.getFullYear();
+                transactionDate = `${day}/${month}/${year}`;
+            } else {
+                transactionDate = parseAndFormatDate(jsonResult.date);
+            }
+        }
+        
+        // If no valid date found, use today's date
+        if (!transactionDate) {
+            transactionDate = getTodayDate();
+        }
+
         return {
             type: jsonResult.type.toLowerCase().includes('income') ? 'income' : 'expense',
             amount: parseFloat(jsonResult.amount),
-            description: jsonResult.description.substring(0, 50) // Truncate for lean storage
+            description: jsonResult.description.substring(0, 50), // Truncate for lean storage
+            transactionDate
         };
 
     } catch (e) {

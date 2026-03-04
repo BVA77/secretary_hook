@@ -73,7 +73,7 @@ export async function handleEvent(event: WebhookEvent): Promise<void> {
             const textContent = event.message.text;
             const result = await extractExpenseDataFromText(textContent);
             parsedData = { ...result, type: result.type };
-            replyMessage = `✅ ข้อความถูกประมวลผล: Type: ${parsedData.type}, Amount: ${parsedData.amount.toFixed(2)}, Desc: ${parsedData.description}`;
+            replyMessage = `✅ ข้อความถูกประมวลผล: Type: ${parsedData.type}, Amount: ${parsedData.amount.toFixed(2)}, Desc: ${parsedData.description}${parsedData.transactionDate ? `, Date: ${parsedData.transactionDate}` : ''}`;
 
         } else if (event.message.type === 'image') {
             // 2. Process image message via OCR
@@ -101,10 +101,11 @@ export async function handleEvent(event: WebhookEvent): Promise<void> {
                 type: result.type,
                 amount: result.amount,
                 description: result.description,
-                image_url: imageUrl
+                image_url: imageUrl,
+                transaction_date: result.transactionDate
             });
 
-            replyMessage = `🖼️ บันทึกจากรูปภาพสำเร็จ! (ID: ${savedExpense.id})\nType: ${savedExpense.type}, Amount: ${savedExpense.amount.toFixed(2)}, Desc: ${savedExpense.description}`;
+            replyMessage = `🖼️ บันทึกจากรูปภาพสำเร็จ! (ID: ${savedExpense.id})\nType: ${savedExpense.type}, Amount: ${savedExpense.amount.toFixed(2)}, Desc: ${savedExpense.description}${savedExpense.transaction_date ? `, Date: ${savedExpense.transaction_date}` : ''}`;
             await bot.replyMessage(event.replyToken, { type: 'text', text: replyMessage });
             return; // Exit early as image processing includes saving and replying
         } else {
@@ -119,7 +120,8 @@ export async function handleEvent(event: WebhookEvent): Promise<void> {
             type: parsedData.type,
             amount: parsedData.amount,
             description: parsedData.description,
-            image_url: null
+            image_url: null,
+            transaction_date: parsedData.transactionDate
         });
 
         // 4. Reply to user for text messages

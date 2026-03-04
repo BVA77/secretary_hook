@@ -9,6 +9,7 @@ export interface Expense {
     amount: number;
     description: string;
     image_url?: string | null;
+    transaction_date?: string | null; // Format: dd/mm/yyyy
 }
 
 /**
@@ -19,4 +20,5 @@ export interface ParsedExpense {
     amount: number;
     description: string;
     imageUrl?: string | null; // This will be the original LINE image URL for reference
+    transactionDate?: string | null; // Format: dd/mm/yyyy
 }
