@@ -3,6 +3,7 @@ import { saveExpense } from './supabaseService';
 import { extractExpenseDataFromImage, extractExpenseDataFromText } from './geminiService';
 import axios from 'axios';
 import { ParsedExpense } from '../types'; // Import from central types
+import { hasAmount } from '../utils'; // Import validation function
 
 // --- Configuration ---
 
@@ -69,8 +70,19 @@ export async function handleEvent(event: WebhookEvent): Promise<void> {
 
     try {
         if (event.message.type === 'text') {
-            // 1. Process text message via NLP
+            // 1. Validate text contains amount before processing
             const textContent = event.message.text;
+            
+            // Check if text contains an amount/number
+            if (!hasAmount(textContent)) {
+                await bot.replyMessage(event.replyToken, { 
+                    type: 'text', 
+                    text: "❌ ข้อความไม่ถูกต้อง: กรุณาระบุจำนวนเงินในข้อความ เช่น 'จ่ายค่าอาหาร 200' หรือ 'ซื้อของ 150 บาท'" 
+                });
+                return;
+            }
+            
+            // 2. Process text message via NLP
             const result = await extractExpenseDataFromText(textContent);
             parsedData = { ...result, type: result.type };
             replyMessage = `✅ ข้อความถูกประมวลผล: Type: ${parsedData.type}, Amount: ${parsedData.amount.toFixed(2)}, Desc: ${parsedData.description}${parsedData.transactionDate ? `, Date: ${parsedData.transactionDate}` : ''}`;

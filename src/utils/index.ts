@@ -124,3 +124,62 @@ export function getTodayDate(): string {
     const year = today.getFullYear();
     return `${day}/${month}/${year}`;
 }
+
+/**
+ * Validates if text contains an amount/number before sending to Gemini API.
+ * @param text The text message to validate.
+ * @returns True if the text contains a number/amount, false otherwise.
+ */
+export function hasAmount(text: string): boolean {
+    if (!text || typeof text !== 'string') {
+        return false;
+    }
+    
+    // First, check for obvious non-amount patterns
+    const yearPattern = /\b(19|20)\d{2}\b/; // Years 1900-2099
+    const phonePattern = /\b0[1-9]\d{8,9}\b/; // Thai phone numbers starting with 0
+    
+    if (yearPattern.test(text) || phonePattern.test(text)) {
+        return false;
+    }
+    
+    // Regular expressions to match various number formats
+    const numberPatterns = [
+        // Numbers with digits: 200, 1,500, 1,000.50, 200.50
+        /\b\d{1,3}(?:,\d{3})*(?:\.\d+)?\b/,
+        // Numbers with spaces: 1 500, 1 000.50
+        /\b\d{1,3}(?:\s\d{3})*(?:\.\d+)?\b/,
+        // Thai numbers: ๒๐๐, ๑๐๐๐ (optional)
+        /\b[๐-๙]+\b/,
+        // Mixed formats: 200บาท, 1000฿, $500, 50usd
+        /\b\d+(?:[.,]\d+)?\s*(?:บาท|฿|\$|usd|eur|gbp|yen|yuan|won)\b/i,
+        // Simple digits with word boundaries (fallback)
+        /\b\d+\b/,
+    ];
+    
+    // Check if any pattern matches
+    for (const pattern of numberPatterns) {
+        if (pattern.test(text)) {
+            // Additional validation: ensure it's not just a year or phone number
+            const match = text.match(pattern);
+            if (match) {
+                const numberStr = match[0];
+                // Remove non-digit characters for validation
+                const cleanNumber = numberStr.replace(/[^\d.]/g, '');
+                
+                // Skip if it looks like a year (1900-2100) or phone number (7+ digits)
+                const num = parseFloat(cleanNumber);
+                if (num >= 1900 && num <= 2100 && cleanNumber.length === 4) {
+                    continue; // Skip years
+                }
+                if (cleanNumber.length >= 9 && !cleanNumber.includes('.')) {
+                    continue; // Skip potential phone numbers
+                }
+                
+                return true;
+            }
+        }
+    }
+    
+    return false;
+}
